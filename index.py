@@ -1,5 +1,6 @@
 import wx
 from display_panel.clock import DigitalClockPanel, AnalogClockPanel
+from display_panel.timer import Timer
 
 class ClockApp(wx.Frame):
     def __init__(self, *args, **kwargs):
@@ -13,7 +14,7 @@ class ClockApp(wx.Frame):
         self.display_panel = wx.Panel(self, id=-1)
 
         # create nav panel sizer and add nav panel options
-        self.nav_panel_sizer = wx.BoxSizer(wx.VERTICAL) 
+        self.nav_panel_sizer = wx.BoxSizer(wx.VERTICAL)     
         
         self.c_btn = wx.StaticText(self.nav_panel, id=-1, label="Clock", style=wx.TE_CENTER)
         self.t_btn = wx.StaticText(self.nav_panel, id=-1, label="Timer", style=wx.TE_CENTER)
@@ -38,6 +39,16 @@ class ClockApp(wx.Frame):
 
         self.clock.SetSizer(self.clock_sizer)
 
+        # create timer panel and its options
+        self.timer = wx.Panel(self.display_panel)
+        self.timer_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        self.timer_clock = Timer(self.timer)
+        self.timer.SetBackgroundColour("#363232")
+        
+        self.timer_sizer.Add(self.timer_clock, 1, wx.EXPAND | wx.CENTER)
+        self.timer.SetSizer(self.timer_sizer)
+
         # check rezizing windows
         self.Bind(wx.EVT_SIZE, self.resize)
 
@@ -47,14 +58,17 @@ class ClockApp(wx.Frame):
     def initUI(self):
         # add title and size
         self.SetTitle("Clock")
-        self.SetSize(800, 400)
+        self.SetMinSize((600, 600))
+        self.SetSize(900, 700)
 
-        # style nav panel options
+        # style nav panel options and add thier functions
         for i in self.btn_list:
             i.SetBackgroundColour("black")
             i.SetForegroundColour("white")
             i.SetFont(wx.Font(15, wx.FONTFAMILY_ROMAN, wx.FONTSTYLE_MAX,
                              wx.FONTWEIGHT_EXTRAHEAVY, faceName="Consolas"))
+            name = i.GetLabelText().lower()
+            i.Bind(wx.EVT_LEFT_DOWN, lambda e: self.switch(e, name))
 
         # nav layout set
         self.nav_panel_sizer.Add(self.c_btn, 0, wx.EXPAND | wx.ALL, 5)
@@ -65,6 +79,7 @@ class ClockApp(wx.Frame):
 
         #display layout set
         self.display_panel_sizer.Add(self.clock, 1, wx.EXPAND | wx.ALL, 5)
+        self.display_panel_sizer.Add(self.timer, 1, wx.EXPAND | wx.ALL, 5)
         self.display_panel.SetSizer(self.display_panel_sizer)
 
         # add panel to main sizer
@@ -73,9 +88,27 @@ class ClockApp(wx.Frame):
         
         # set the sizer
         self.SetSizer(self.m_sizer)
+
+        # hide the other sizers except clock
+        self.switch()
+
+        #center the window
+        self.Centre()
     
     def resize(self, e):
         e.Skip()
+    
+    def switch(self, e=None, name="clock"):
+        """To switch between tabs"""
+        if e:
+            name = e.GetEventObject().GetLabel().lower()
+        if name == "clock":
+            self.clock.Show()
+            self.timer.Hide()
+        elif name == "timer":
+            self.timer.Show()
+            self.clock.Hide()
+        self.Layout()
 
 if __name__ == "__main__":
     app = wx.App(False)

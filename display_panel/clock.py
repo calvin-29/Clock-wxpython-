@@ -1,6 +1,9 @@
 import wx
 from datetime import datetime
 import math
+import pygame
+
+pygame.mixer.init()
 
 class AnalogClockPanel(wx.Panel):
     def __init__(self, parent):
@@ -55,7 +58,7 @@ class AnalogClockPanel(wx.Panel):
         gc.Rotate(math.radians(hour_angle))
         
         gc.SetPen(wx.Pen(wx.YELLOW, 6)) # Thick hand
-        gc.StrokeLine(0, 0, 0, -(min(h, w)/4))    # Short hand
+        gc.StrokeLine(0, 0, 0, -(radius*0.5))    # Short hand
         gc.PopState()  # LOAD: Paper snaps back to straight!
 
         # --- MINUTE HAND ---
@@ -65,7 +68,7 @@ class AnalogClockPanel(wx.Panel):
         gc.Rotate(math.radians(min_angle))
         
         gc.SetPen(wx.Pen(wx.BLUE, 4))  # Medium hand
-        gc.StrokeLine(0, 0, 0, -(min(h, w)/3))    # Long hand
+        gc.StrokeLine(0, 0, 0, -(radius*0.7))    # Long hand
         gc.PopState()  # LOAD again
 
         # --- SECOND HAND ---
@@ -75,7 +78,7 @@ class AnalogClockPanel(wx.Panel):
         gc.Rotate(math.radians(min_angle))
         
         gc.SetPen(wx.Pen(wx.GREEN, 2))  # Medium hand
-        gc.StrokeLine(0, 0, 0, radius*.9)    # Long hand
+        gc.StrokeLine(0, 0, 0, -(radius*0.9))    # Long hand
         gc.PopState()  # LOAD again
 
         # screw to hold hands together to make it look better
@@ -111,3 +114,57 @@ class DigitalClockPanel(wx.Panel):
         formatted_time = now.strftime("%H : %M : %S")
         self.digital_display.SetLabel(formatted_time)
         self.Layout()
+
+class RotatePanel(wx.Panel):
+    def __init__(self, parent, num):
+        super().__init__(parent)
+        # main number and number that changes
+        self.number = num
+        self.total = num
+
+        self.Bind(wx.EVT_PAINT, self.OnPaint)
+        self.Bind(wx.EVT_SIZE, self.OnSize)
+        self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
+
+        self.timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.OnTimer, self.timer)
+        self.timer.Start(1000)
+
+    def OnPaint(self, e):
+        pdc = wx.AutoBufferedPaintDC(self)
+        pdc.SetBackground(wx.Brush(self.GetBackgroundColour()))
+        pdc.Clear()
+        gc = wx.GraphicsContext.Create(pdc)
+
+        w, h = self.GetSize()
+        rad = min(w, h)/2 - 10
+        gc.Translate(w/2, h/2)
+
+        gc.SetPen(wx.Pen(wx.BLUE))
+        gc.DrawEllipse(-rad, -rad, rad*2, rad*2)
+
+        gc.SetPen(wx.Pen(wx.RED, 5))
+        
+        gc.Rotate(-(math.radians(self.number*(360/self.total))))
+        gc.StrokeLine(0, 0, 0, -(rad-20))
+    
+    def OnSize(self, e):
+        self.Refresh()
+        e.Skip()
+    
+    def OnTimer(self, e):
+        if self.number != 0:
+            self.number -= 1
+        else:
+            if not pygame.mixer.get_busy():
+                pygame.mixer.Sound(r"C:\Users\Calvin Ugwoke\Music\MONTAGEM TORMENTA (Slowed) [KTxxJEB4f0Y].mp3").play()
+
+        self.Refresh()
+
+if __name__ == "__main__":
+    app = wx.App()
+    fr = wx.Frame(None, -1, "Rotate", size=(200, 200))
+    RotatePanel(fr, 10)
+    #1352
+    fr.Show()
+    app.MainLoop()    
