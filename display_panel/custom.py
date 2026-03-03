@@ -1,6 +1,6 @@
 import wx
 
-class ShapedButton(wx.Panel):
+class ShapedButton(wx.Button):
     def __init__(self, parent, parent_color, text, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.text = text
@@ -13,7 +13,6 @@ class ShapedButton(wx.Panel):
 
     def paint(self, e):
         dc = wx.AutoBufferedPaintDC(self)
-        dc.SetBackground(wx.Brush(self.GetBackgroundColour()))
         dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
 
@@ -38,7 +37,6 @@ class ShapedLabel(wx.Panel):
     
     def OnPaint(self, e):
         dc = wx.AutoBufferedPaintDC(self)
-        dc.SetBackground(wx.Brush(self.GetBackgroundColour()))
         dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
         
@@ -69,18 +67,17 @@ class ShapedPanel(wx.Panel):
         super().__init__(parent, *args, **kwargs)
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_SIZE, self.Onsize)
+        self.SetBackgroundColour(color)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
-        self.color = color
 
     def OnPaint(self, e):
         pdc = wx.AutoBufferedPaintDC(self)
-        pdc.SetBackground(wx.Brush(self.GetBackgroundColour()))
         pdc.Clear()
         dc = wx.GraphicsContext.Create(pdc)
 
         w, h = self.GetSize()
 
-        dc.SetBrush(wx.Brush(self.color))
+        dc.SetBrush(wx.Brush(wx.Colour(50, 150, 50)))
         dc.SetPen(wx.TRANSPARENT_PEN) # Removes the default black border
         dc.DrawEllipse(0, 0, w, h)
     

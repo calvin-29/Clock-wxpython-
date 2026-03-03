@@ -41,10 +41,10 @@ class ClockApp(wx.Frame):
 
         # create timer panel and its options
         self.timer = wx.Panel(self.display_panel)
-        self.timer_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self.timer_clock = Timer(self.timer)
+        self.timer_sizer = wx.BoxSizer(wx.VERTICAL)
         self.timer.SetBackgroundColour("#363232")
+        self.timer_clock = Timer(self.timer)
         
         self.timer_sizer.Add(self.timer_clock, 1, wx.EXPAND | wx.CENTER)
         self.timer.SetSizer(self.timer_sizer)
