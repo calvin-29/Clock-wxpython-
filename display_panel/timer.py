@@ -1,6 +1,7 @@
 import wx
 from .custom import ShapedButton, ShapedLabel, ShapedPanel
 from .clock import RotatePanel
+import pathlib
 
 class Options(wx.Panel):
     def __init__(self, parent, *args, **kwargs):
@@ -73,6 +74,83 @@ class TimerSelection(ShapedPanel):
         else:
             wx.MessageBox("Timer can not be less than 5 seconds", "Time Setting", style=wx.CENTRE)
 
+class TimerClock(wx.Panel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+
+        def play_f(e):
+            self.clock.timer.Start(1000)
+            self.pause_btn.Enable()
+            self.start_btn.Disable()
+        
+        def pause_f(e):
+            self.clock.timer.Stop()
+            self.start_btn.Enable()
+            self.pause_btn.Disable()
+
+        def reset(e): 
+            self.clock.timer.Stop()
+            self.Parent.timerSelection.hr.number.SetLabel("00")
+            self.Parent.timerSelection.min.number.SetLabel("00")
+            self.Parent.timerSelection.sec.number.SetLabel("00")
+            self.clock.set_num(0)
+            self.clock.stop_sound()
+            self.Parent.reset()
+
+        main_path = pathlib.Path(__file__).resolve()
+        
+        pause_icon = str(main_path.parent.parent/'images'/'pause2.png')
+        img = wx.Image(pause_icon, wx.BITMAP_TYPE_ANY)
+        img = img.Scale(40, 40, wx.IMAGE_QUALITY_HIGH)
+        pause = wx.Bitmap(img)
+
+        play_icon = str(main_path.parent.parent/'images'/'play2.png')
+        img = wx.Image(play_icon, wx.BITMAP_TYPE_ANY)
+        img = img.Scale(40, 40, wx.IMAGE_QUALITY_HIGH)
+        play = wx.Bitmap(img)
+
+        reset_icon = str(main_path.parent.parent/'images'/'reset2.png')
+        img = wx.Image(reset_icon, wx.BITMAP_TYPE_ANY)
+        img = img.Scale(40, 40, wx.IMAGE_QUALITY_HIGH)
+        reset_b = wx.Bitmap(img)
+
+        self.clock = RotatePanel(self)
+
+        self.pause_btn = wx.BitmapButton(self, -1, pause, style=wx.BORDER_NONE)
+        self.pause_btn.Bind(wx.EVT_BUTTON, pause_f)
+        self.pause_btn.SetBackgroundColour(self.clock.GetBackgroundColour())
+        self.pause_btn.SetToolTip("Pause")
+
+        self.reset_btn = wx.BitmapButton(self, -1, reset_b, style=wx.BORDER_NONE)
+        self.reset_btn.Bind(wx.EVT_BUTTON, reset)
+        self.reset_btn.SetBackgroundColour(self.clock.GetBackgroundColour())
+        self.reset_btn.SetToolTip("Reset")
+
+        self.start_btn = wx.BitmapButton(self, -1, play, style=wx.BORDER_NONE)
+        self.start_btn.Bind(wx.EVT_BUTTON, play_f)
+        self.start_btn.SetBackgroundColour(self.clock.GetBackgroundColour())
+        self.start_btn.SetToolTip("Play")
+
+        self.start_btn.Disable()
+        
+        self.btn_sizer = wx.BoxSizer()
+        self.btn_sizer.Add((0, 0), 1)
+        self.btn_sizer.Add(self.pause_btn, 0)
+        self.btn_sizer.Add((0, 0), 1)
+        self.btn_sizer.Add(self.reset_btn, 0)
+        self.btn_sizer.Add((0, 0), 1)
+        self.btn_sizer.Add(self.start_btn, 0)
+        self.btn_sizer.Add((0, 0), 1)
+
+        self.sizer.Add(self.clock, 8, wx.CENTER|wx.EXPAND)
+        self.sizer.Add(self.btn_sizer, 1, wx.EXPAND)
+        self.SetSizer(self.sizer)
+    
+    def set_num(self, num):
+        self.clock.set_num(num)
+        self.clock.start("")
+
 class Timer(wx.Panel):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
@@ -80,7 +158,7 @@ class Timer(wx.Panel):
         self.SetBackgroundColour(parent.GetBackgroundColour())
 
         self.timerSelection = TimerSelection(self)
-        self.timerClock  = RotatePanel(self)
+        self.timerClock = TimerClock(self)
 
         self.sizer.Add(self.timerSelection, 1, wx.EXPAND)
         self.sizer.Add(self.timerClock, 1, wx.EXPAND)
@@ -92,6 +170,8 @@ class Timer(wx.Panel):
         self.timerSelection.Hide()
         self.timerClock.Show()
         self.timerClock.set_num(num)
-        self.timerClock.start("")
-        self.Layout() 
-
+        self.Layout()
+    
+    def reset(self):
+        self.timerClock.Hide()
+        self.timerSelection.Show()

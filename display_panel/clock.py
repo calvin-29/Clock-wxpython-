@@ -127,6 +127,7 @@ class RotatePanel(wx.Panel):
         self.sound = pygame.mixer.Sound(r"C:\Users\CalvinCU\Music\MONTAGEM TORMENTA (Slowed) [KTxxJEB4f0Y].mp3")
 
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
+        self.SetBackgroundColour(wx.Colour(50, 50, 50))
 
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_SIZE, lambda e: self.Refresh())
@@ -166,8 +167,8 @@ class RotatePanel(wx.Panel):
         end_rad = math.radians(-90+angle_deg)
 
         gc.SetPen(wx.Pen(wx.Colour(90,200,70), 12))
-        path = gc.CreatePath()
-        if int(end_rad) != 4: 
+        if angle_deg != 360:
+            path = gc.CreatePath()
             path.AddArc(0, 0, radius, start_rad, end_rad, False)
             gc.StrokePath(path)
 
@@ -181,9 +182,12 @@ class RotatePanel(wx.Panel):
             wx.Font(16, wx.FONTFAMILY_DEFAULT,
                     wx.FONTSTYLE_NORMAL,
                     wx.FONTWEIGHT_BOLD),
-            wx.BLUE
+            wx.Colour(150, 150, 150)
         )
-        text = str(self.number)
+
+        hr, minu = divmod(self.number, 3600)
+        minu, sec = divmod(minu, 60)
+        text = f"{hr:02} : {minu:02} : {sec:02}"
         tw, th = gc.GetTextExtent(text)
         gc.DrawText(text, -tw/2, -th/2)
     
@@ -193,3 +197,7 @@ class RotatePanel(wx.Panel):
     def set_num(self, seconds):
         self.total = seconds
         self.number = seconds
+    
+    def stop_sound(self):
+        self.sound.stop()
+        self.alarm_played = False
