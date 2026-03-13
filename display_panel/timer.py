@@ -11,9 +11,9 @@ class Options(wx.Panel):
         color = wx.Colour(50, 150, 50)
         self.SetBackgroundColour(color)
 
-        self.up_btn = ShapedButton(self, color, "˄")
+        self.up_btn = ShapedButton(self, "˄")
         self.number = ShapedLabel(self, color, "00")
-        self.down_btn = ShapedButton(self, color, "˅")
+        self.down_btn = ShapedButton(self, "˅")
 
         self.sizer.Add(self.up_btn, 1, wx.CENTER)
         self.sizer.Add((0, 0), 1)
@@ -57,7 +57,7 @@ class TimerSelection(ShapedPanel):
         self.options_sizer.Add(self.sec, 1, wx.EXPAND|wx.ALL, 10)
         self.options_sizer.Add((0, 0), 1)
 
-        self.play_btn = ShapedButton(self, wx.Colour(50, 150, 50), "►")
+        self.play_btn = ShapedButton(self, "►")
         self.play_btn.Bind(wx.EVT_LEFT_DOWN, self.start_timer)
         self.sizer.Add((0,0), 1)
         self.sizer.Add(self.options_sizer, 0, wx.EXPAND)

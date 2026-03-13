@@ -1,6 +1,7 @@
 import wx
 from datetime import datetime
 import math
+import os
 import pygame
 
 pygame.mixer.init()
@@ -122,9 +123,9 @@ class RotatePanel(wx.Panel):
         self.number = 0
         self.alarm_played = False
 
-        # BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        # sound_path = os.path.join(BASE_DIR, "alarm.mp3")
-        self.sound = pygame.mixer.Sound(r"C:\Users\CalvinCU\Music\MONTAGEM TORMENTA (Slowed) [KTxxJEB4f0Y].mp3")
+        BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        sound_path = os.path.join(BASE_DIR, "sound", "alarm.mp3")
+        self.sound = pygame.mixer.Sound(sound_path)
 
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.SetBackgroundColour(wx.Colour(50, 50, 50))
@@ -166,14 +167,20 @@ class RotatePanel(wx.Panel):
         start_rad = math.radians(-90)
         end_rad = math.radians(-90+angle_deg)
 
-        gc.SetPen(wx.Pen(wx.Colour(90,200,70), 12))
+        color = ""
+        if self.number <= 10:
+            color = wx.Colour(200,50,50)
+        else:
+            color = wx.Colour(90,200,70)
+        
+        gc.SetPen(wx.Pen(color, 12))
         if angle_deg != 360:
             path = gc.CreatePath()
             path.AddArc(0, 0, radius, start_rad, end_rad, False)
             gc.StrokePath(path)
 
         gc.PushState()
-        gc.SetBrush(wx.Brush(wx.Colour(90,200,70)))
+        gc.SetBrush(wx.Brush(wx.Colour(color)))
         gc.Rotate(-(math.radians(self.number*(360/self.total))))
         gc.DrawEllipse(0, -(radius)-10, 20, 20)
         gc.PopState()
