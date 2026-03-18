@@ -4,15 +4,12 @@ import math
 import os
 import pygame
 
-pygame.mixer.init()
-
 class AnalogClockPanel(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent, style=wx.SUNKEN_BORDER)
         self.SetBackgroundColour("#1A1818")
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         
-        # 1. Start a Timer that triggers every 1000ms (1 second)
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.OnTimer, self.timer)
         self.timer.Start(1000)

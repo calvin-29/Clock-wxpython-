@@ -2,6 +2,10 @@ import wx
 from display_panel.clock import DigitalClockPanel, AnalogClockPanel
 from display_panel.timer import Timer
 from display_panel.alarm import Alarm
+from display_panel.stop import StopWatch
+import pygame
+
+pygame.mixer.init()
 
 class ClockApp(wx.Frame):
     def __init__(self, *args, **kwargs):
@@ -62,9 +66,20 @@ class ClockApp(wx.Frame):
         
         self.alarm_sizer.Add(self.alarm_clock, 1, wx.EXPAND | wx.CENTER)
         self.alarm.SetSizer(self.alarm_sizer)
+        
+        # create stop watch panel and its options
+        self.stopwatch = wx.Panel(self.display_panel)
+        self.stopwatch.SetName("stop watch")
+
+        self.stopwatch_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.stopwatch.SetBackgroundColour("#363232")
+        self.stopwatch_clock = StopWatch(self.stopwatch)
+        
+        self.stopwatch_sizer.Add(self.stopwatch_clock, 1, wx.EXPAND | wx.CENTER)
+        self.stopwatch.SetSizer(self.stopwatch_sizer)
 
         # Add all panels to list for easy sorting
-        self.windows = [self.clock, self.timer, self.alarm]
+        self.windows = [self.clock, self.timer, self.alarm, self.stopwatch]
 
         # check rezizing windows
         self.Bind(wx.EVT_SIZE, self.resize)
@@ -75,7 +90,7 @@ class ClockApp(wx.Frame):
     def initUI(self):
         # add title and size
         self.SetTitle("Clock")
-        self.SetMinSize((600, 600))
+        self.SetMinSize((800, 600))
         self.SetSize(900, 700)
 
         # style nav panel options and add thier functions
@@ -98,6 +113,7 @@ class ClockApp(wx.Frame):
         self.display_panel_sizer.Add(self.clock, 1, wx.EXPAND | wx.ALL, 5)
         self.display_panel_sizer.Add(self.timer, 1, wx.EXPAND | wx.ALL, 5)
         self.display_panel_sizer.Add(self.alarm, 1, wx.EXPAND | wx.ALL, 5)
+        self.display_panel_sizer.Add(self.stopwatch, 1, wx.EXPAND | wx.ALL, 5)
         self.display_panel.SetSizer(self.display_panel_sizer)
 
         # add panel to main sizer

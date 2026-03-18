@@ -6,8 +6,6 @@ from datetime import datetime as dt
 import pygame
 import os
 
-pygame.mixer.init()
-
 class AlarmOption(wx.Panel):
     def __init__(self, parent, time, freq):
         super().__init__(parent, style=wx.BORDER_THEME)
@@ -82,7 +80,8 @@ class Options(wx.Panel):
 
 class AddDialog(wx.Dialog):
     def __init__(self, parent):
-        super().__init__(parent, size=(390, 500))
+        super().__init__(parent, size=parent.GetSize())
+        self.CentreOnParent()
         
         color = "#1A1818"
         self.SetBackgroundColour(color)
@@ -94,37 +93,37 @@ class AddDialog(wx.Dialog):
         self.hr = Options(self, color, "hr")
         self.min = Options(self, color, "min")
         self.mer = Options(self, color, "", "AM")
-        
-        self.options_sizer.Add(self.hr, 1, wx.EXPAND|wx.LEFT|wx.UP|wx.BOTTOM, 5)
-        self.options_sizer.Add(self.min, 1, wx.EXPAND|wx.LEFT|wx.UP|wx.BOTTOM, 5)
-        self.options_sizer.Add(self.mer, 1, wx.EXPAND|wx.LEFT|wx.RIGHT|wx.UP|wx.BOTTOM, 5)
-        self.sizer.Add(self.options_sizer, 0, wx.EXPAND)
-        self.sizer.Add((0,0), 1, wx.EXPAND)
+
+        self.options_sizer.Add((0,0), 1)        
+        self.options_sizer.Add(self.hr, 5, wx.EXPAND|wx.LEFT|wx.UP|wx.BOTTOM, 5)
+        self.options_sizer.Add((0,0), 1)
+        self.options_sizer.Add(self.min, 5, wx.EXPAND|wx.LEFT|wx.UP|wx.BOTTOM, 5)
+        self.options_sizer.Add((0,0), 1)
+        self.options_sizer.Add(self.mer, 5, wx.EXPAND|wx.LEFT|wx.RIGHT|wx.UP|wx.BOTTOM, 5)
+        self.options_sizer.Add((0,0), 1)
 
         self.freq = wx.BoxSizer()
         font = wx.Font(20, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, 
                            wx.FONTWEIGHT_BOLD, faceName="Arial")
-        for i in ['S','M','T','W','Th','F','Sa']:
+        self.normal = {1:'Sun', 2:'Mon', 3:'Tue', 4:'Wed', 5:'Thu', 6:'Fri', 7:'Sat'}
+        for i in self.normal.values():
             text = wx.StaticText(self, -1, i, style=wx.BORDER_THEME|wx.TE_CENTER)
             text.SetForegroundColour(wx.WHITE)
             text.Bind(wx.EVT_LEFT_UP, self.Select)
             text.SetFont(font)
             self.freq.Add(text, 1, wx.ALL, 5)
-        self.sizer.Add(self.freq, 0, wx.EXPAND)
-        self.sizer.Add((0,0), 1, wx.EXPAND)
 
         self.ringtone = wx.BoxSizer()
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        sound_path = os.path.join(BASE_DIR, "alarm.mp3")
+        sound_path = os.path.join(BASE_DIR, "sound", "alarm.mp3")
         self.file_path = wx.TextCtrl(self, -1, sound_path)
         font2 = wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_LIGHT, 0, "Consolas")
         self.file_path.SetFont(font2)
         browse = wx.Button(self, -1, "Browse")
         browse.SetFont(font2)
         browse.Bind(wx.EVT_BUTTON, self.Browse)
-        self.ringtone.Add(self.file_path, 4, wx.ALL, 5)
-        self.ringtone.Add(browse, 1, wx.ALL, 5)
-        self.sizer.Add(self.ringtone, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, 10)
+        self.ringtone.Add(self.file_path, 4, wx.RIGHT, 5)
+        self.ringtone.Add(browse, 1)
 
         self.name_sizer = wx.BoxSizer()
         self.label = wx.StaticText(self, -1, "Label: ", style=wx.TE_CENTER)
@@ -132,15 +131,18 @@ class AddDialog(wx.Dialog):
         self.label.SetForegroundColour(wx.WHITE)
         self.name = wx.TextCtrl(self, -1)
         self.name.SetFont(font2)
-        self.name_sizer.Add(self.label, 1, wx.LEFT|wx.CENTER, 30)
-        self.name_sizer.Add(self.name, 3, wx.RIGHT, 30)
-        self.sizer.Add(self.name_sizer, 1, wx.EXPAND)
-        self.sizer.Add((0,0), 1, wx.EXPAND)
-
+        self.name_sizer.Add(self.label, 1)
+        self.name_sizer.Add(self.name, 3)
+        
         self.enter = ShapedButton(self, "Enter")
         self.enter.Bind(wx.EVT_BUTTON, self.submit)
-        self.sizer.Add(self.enter, 0, wx.CENTER|wx.EXPAND|wx.LEFT|wx.RIGHT, 100)
-        self.sizer.Add((0,0), 1, wx.EXPAND)
+        self.enter.SetMinSize((100, 50))
+
+        self.sizer.Add(self.options_sizer, 6, wx.EXPAND|wx.UP|wx.DOWN, 20)
+        self.sizer.Add(self.freq, 0, wx.LEFT|wx.RIGHT|wx.DOWN|wx.EXPAND, 10)
+        self.sizer.Add(self.ringtone, 0, wx.LEFT|wx.RIGHT|wx.DOWN|wx.EXPAND, 10)
+        self.sizer.Add(self.name_sizer, 0, wx.LEFT|wx.RIGHT|wx.DOWN|wx.EXPAND, 10)
+        self.sizer.Add(self.enter, 0, wx.CENTER|wx.DOWN, 10)
 
         self.SetSizer(self.sizer)
     
@@ -168,7 +170,7 @@ class AddDialog(wx.Dialog):
         self.data = {
             'music': self.file_path.GetValue(),
             'time': f"{self.hr.num}:{self.min.num} {self.mer.num}",
-            'freq': self.freq_day,
+            'freq': self.arrange(self.freq_day),
             'name': self.name.GetValue(),
             'selected': ""
         }
@@ -177,6 +179,16 @@ class AddDialog(wx.Dialog):
     
     def OnClose(self, e):
         self.EndModal(wx.ID_CANCEL)
+        
+    def arrange(self, given):
+        # function to arrange the frequency in correct wk day order
+        new = []
+        for i in given:
+            for j, k in self.normal.items():
+                if k == i:
+                    new.append(j)
+        return [self.normal[i] for i in sorted(new)]
+
 
 class Alarm(wx.Panel):
     def __init__(self, parent):
@@ -216,16 +228,23 @@ class Alarm(wx.Panel):
 
     def OnTimer(self, e):
         now = dt.now().strftime("%I:%M %p")
-        
+        day = dt.now().strftime("%a")
+
         for i in self.time_list:
-            if i[0] == now and i[1].toggle.selected:
-                if not pygame.mixer.get_busy():
+            if i[2] == "Once":
+                if i[0] == now and i[1].toggle.selected and not pygame.mixer.get_busy() and not self.alarm_played:
                     self.sound.play()
                     self.alarm_played = True
+                elif not i[1].toggle.selected:
+                    self.sound.stop()
             else:
-                self.sound.stop()
-                self.alarm_played = True
-    
+                for k in i[2]:
+                    if i[0] == now and i[1].toggle.selected and k == day and not pygame.mixer.get_busy():
+                        self.sound.play()
+                        self.alarm_played = True
+                    elif not i[1].toggle.selected:
+                        self.sound.stop()
+
     def OnSizer(self, e):
         self.Layout()
 
@@ -246,10 +265,10 @@ class Alarm(wx.Panel):
         if res == wx.ID_OK:
             freq = ",".join(dlg.data['freq']) if dlg.data['freq'] else "Once"
             time_str = dlg.data['time']
-            
+
             # Create the UI element for the alarm
             new_alarm = AlarmOption(self.scroll_area, time_str, freq)
-            self.time_list.append([time_str, new_alarm])
+            self.time_list.append([time_str, new_alarm, freq.split(',') if freq != "Once" else freq])
             self.scroll_sizer.Add(new_alarm, 0, wx.EXPAND | wx.ALL, 5)
             
             self.scroll_area.Layout()
