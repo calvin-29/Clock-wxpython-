@@ -26,7 +26,7 @@ class ShapedButton(wx.Button):
 
 class ShapedLabel(wx.Panel):
     def __init__(self, parent, parent_color, text, fontsize=50, *args, **kwargs):
-        super().__init__(parent, *args, **kwargs)
+        super().__init__(parent, style=wx.TRANSPARENT_WINDOW, *args, **kwargs)
         self.SetBackgroundColour(parent_color)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.text = text
@@ -35,8 +35,7 @@ class ShapedLabel(wx.Panel):
         self.Bind(wx.EVT_PAINT, self.OnPaint)
     
     def OnPaint(self, e):
-        dc = wx.AutoBufferedPaintDC(self)
-        dc.Clear()
+        dc = wx.PaintDC(self)
         gc = wx.GraphicsContext.Create(dc)
         
         w, h = self.GetSize()
@@ -77,7 +76,7 @@ class ShapedPanel(wx.Panel):
         w, h = self.GetSize()
 
         dc.SetBrush(wx.Brush(wx.Colour(50, 150, 50)))
-        dc.SetPen(wx.TRANSPARENT_PEN) # Removes the default black border
+        dc.SetPen(wx.Pen(wx.GREEN, 5))
         dc.DrawEllipse(0, 0, w, h)
     
     def Onsize(self, e):

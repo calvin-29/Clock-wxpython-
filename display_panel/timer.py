@@ -5,40 +5,104 @@ import pathlib
 
 class Options(wx.Panel):
     def __init__(self, parent, *args, **kwargs):
-        super().__init__(parent, *args, **kwargs)
+        super().__init__(parent, style=wx.WANTS_CHARS, *args, **kwargs)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
 
         color = wx.Colour(50, 150, 50)
         self.SetBackgroundColour(color)
+        self.is_selected = False
 
         self.up_btn = ShapedButton(self, "˄")
         self.number = ShapedLabel(self, color, "00")
         self.down_btn = ShapedButton(self, "˅")
 
-        self.sizer.Add(self.up_btn, 1, wx.CENTER)
+        self.sizer.Add(self.up_btn, 1, wx.CENTER|wx.UP|wx.RIGHT|wx.LEFT, 10)
         self.sizer.Add((0, 0), 1)
-        self.sizer.Add(self.number, 2,  wx.CENTER|wx.EXPAND)
+        self.sizer.Add(self.number, 2,  wx.CENTER|wx.EXPAND|wx.RIGHT|wx.LEFT, 10)
         self.sizer.Add((0, 0), 1)
-        self.sizer.Add(self.down_btn, 1, wx.CENTER)
+        self.sizer.Add(self.down_btn, 1, wx.CENTER|wx.DOWN|wx.RIGHT|wx.LEFT, 10)
 
         self.up_btn.Bind(wx.EVT_LEFT_DOWN, lambda e: self.change_num("up"))
         self.down_btn.Bind(wx.EVT_LEFT_DOWN, lambda e: self.change_num("down"))
 
         self.SetSizer(self.sizer)
     
-    def change_num(self, type):
-        num = self.number.GetLabelText()
-        if type == "up":
-            if int(num) + 1 < 60:
-                num = f"{int(num) + 1:02}"
+        self.Bind(wx.EVT_LEFT_DOWN, self.select)
+        self.Bind(wx.EVT_ENTER_WINDOW, lambda e: self.hover("over"))
+        self.Bind(wx.EVT_LEAVE_WINDOW, lambda e: self.hover("leave"))
+        self.Bind(wx.EVT_KEY_DOWN, self.onKeyPress) 
+        
+        self.SetSizer(self.sizer)
+
+    def change_num(self, direction, change=False):
+        if not change:
+            num_str = self.number.GetLabelText()
+            
+            num = int(num_str)
+            if direction == "up":
+                num = (num + 1)%60
+            elif direction == "down":
+                num = (num - 1)%60
+            
+            self.number.SetLabel(f"{num:02}")
         else:
-            if int(num) - 1 > -1:
-                num = f"{int(num) - 1:02}"
-        self.number.SetLabel(num)
-    
+            self.children = [item.GetWindow() for item in self.GetContainingSizer().GetChildren() if item.GetWindow()]
+
+            num = None
+            for i in self.children:
+                if i.is_selected:
+                    i.is_selected = False
+                    i.SetBackgroundColour(wx.Colour(50, 150, 50))
+                    i.Refresh()
+                    num = self.children.index(i)
+                    break
+            
+            if num is None:
+                return
+
+            if direction == 'left':
+                num = (num - 1)%len(self.children)
+            elif direction == 'right':
+                num = (num + 1)%len(self.children)
+            self.children[num].is_selected = True
+            self.children[num].SetFocusIgnoringChildren()
+            self.children[num].SetBackgroundColour(wx.Colour(80, 80, 80))
+            self.children[num].Refresh()
+
     @property
     def num(self):
         return int(self.number.GetLabelText())
+    
+    def select(self, e=None):
+        self.children = [item.GetWindow() for item in self.GetContainingSizer().GetChildren() if item.GetWindow()]
+        
+        #clear former selection
+        for i in self.children:
+            if i.is_selected:
+                i.SetBackgroundColour(wx.Colour(50, 150, 50))
+                i.is_selected = False
+                i.Refresh()
+
+        self.is_selected = True
+        self.SetFocusIgnoringChildren()
+        self.SetBackgroundColour(wx.Colour(80, 80, 80))
+        self.Refresh()
+        if e: e.Skip()
+    
+    def onKeyPress(self, e):
+        key = e.GetKeyCode()
+        if key == wx.WXK_UP:    self.change_num("up")
+        elif key == wx.WXK_DOWN:  self.change_num("down")
+        elif key == wx.WXK_LEFT:  self.change_num("left", True)
+        elif key == wx.WXK_RIGHT: self.change_num("right", True)
+    
+    def hover(self, mode):
+        if mode == "over" and not self.is_selected:
+            self.SetBackgroundColour(wx.Colour(60, 60, 60))
+            self.Refresh()
+        elif mode == "leave" and not self.is_selected:
+            self.SetBackgroundColour(wx.Colour(50, 150, 50))
+            self.Refresh()
 
 class TimerSelection(ShapedPanel):
     def __init__(self, parent):

@@ -35,10 +35,11 @@ class AlarmOption(wx.Panel):
 
 class Options(wx.Panel):
     def __init__(self, parent, color, time, text="00", *args, **kwargs):
-        super().__init__(parent, *args, **kwargs)
+        super().__init__(parent, style=wx.WANTS_CHARS, *args, **kwargs)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.SetBackgroundColour(color)
+        self.is_selected = False
         self.time = time
 
         self.up_btn = ShapedButton(self, "˄")
@@ -46,37 +47,106 @@ class Options(wx.Panel):
         self.down_btn = ShapedButton(self, "˅")
 
         self.sizer.Add(self.up_btn, 1, wx.CENTER|wx.ALL, 10)
+        self.sizer.Add((0, 0), 1)
         self.sizer.Add(self.number, 2,  wx.CENTER|wx.EXPAND|wx.ALL, 10)
+        self.sizer.Add((0, 0), 1)
         self.sizer.Add(self.down_btn, 1, wx.CENTER|wx.ALL, 10)
 
         self.up_btn.Bind(wx.EVT_LEFT_DOWN, lambda e: self.change_num("up"))
         self.down_btn.Bind(wx.EVT_LEFT_DOWN, lambda e: self.change_num("down"))
 
+        self.Bind(wx.EVT_LEFT_DOWN, self.select)
+        self.Bind(wx.EVT_ENTER_WINDOW, lambda e: self.hover("over"))
+        self.Bind(wx.EVT_LEAVE_WINDOW, lambda e: self.hover("leave"))
+        self.Bind(wx.EVT_KEY_DOWN, self.onKeyPress)
+
         self.SetSizer(self.sizer)
-    
-    def change_num(self, type):
-        num = self.number.GetLabelText()
-        if num.isnumeric():
-            if type == "up":
-                if self.time == 'min':
-                    if int(num) + 1 < 60:
-                        num = f"{int(num) + 1:02}"
-                elif self.time == 'hr':
-                    if int(num) + 1 < 13:
-                        num = f"{int(num) + 1:02}"
-            else:
-                if int(num) - 1 > -1:
-                    num = f"{int(num) - 1:02}"
-        else:
-            if num == "AM":
-                num = "PM"
-            else:
-                num = "AM"
-        self.number.SetLabel(num)
     
     @property
     def num(self):
         return self.number.GetLabelText()
+    
+    def change_num(self, direction, change=False):
+        if not change:
+            num_str = self.number.GetLabelText()
+            
+            # Handle AM/PM
+            if not num_str.isdigit() and not change:
+                self.number.SetLabel("PM" if num_str == "AM" else "AM")
+                return
+
+            num = int(num_str)
+            if direction == "up":
+                if self.time == 'hr':
+                    num = 1 if num >= 12 else num + 1
+                elif self.time == 'min':
+                    num = 0 if num >= 59 else num + 1
+            elif direction == "down":
+                if self.time == 'hr':
+                    num = 12 if num <= 1 else num - 1
+                elif self.time == 'min':
+                    num = 59 if num <= 0 else num - 1
+            
+            self.number.SetLabel(f"{num:02}")
+        else:
+            self.children = [item.GetWindow() for item in self.GetContainingSizer().GetChildren() if item.GetWindow()]
+
+            num = None
+            for i in self.children:
+                if i.is_selected:
+                    i.is_selected = False
+                    i.SetBackgroundColour(self.Parent.GetBackgroundColour())
+                    i.Refresh()
+                    num = self.children.index(i)
+                    break
+            
+            if num is None:
+                return
+
+            if direction == 'left':
+                num = (num - 1)%len(self.children)
+            elif direction == 'right':
+                num = (num + 1)%len(self.children)
+            self.children[num].is_selected = True
+            self.children[num].SetFocusIgnoringChildren()
+            self.children[num].SetBackgroundColour(wx.Colour(80, 80, 80))
+            self.children[num].Refresh()
+
+    @property
+    def num(self):
+        return self.number.GetLabelText()
+    
+    def select(self, e=None):
+        self.children = [item.GetWindow() for item in self.GetContainingSizer().GetChildren() if item.GetWindow()]
+        
+        #clear former selection
+        for i in self.children:
+            if i.is_selected:
+                i.SetBackgroundColour(self.Parent.GetBackgroundColour())
+                i.is_selected = False
+                i.Refresh()
+
+        self.is_selected = True
+        self.SetFocusIgnoringChildren()
+        self.SetBackgroundColour(wx.Colour(80, 80, 80))
+        self.Refresh()
+        if e: e.Skip()
+    
+    def onKeyPress(self, e):
+        key = e.GetKeyCode()
+        if key == wx.WXK_UP:    self.change_num("up")
+        elif key == wx.WXK_DOWN:  self.change_num("down")
+        elif key == wx.WXK_LEFT:  self.change_num("left", True)
+        elif key == wx.WXK_RIGHT: self.change_num("right", True)
+    
+    def hover(self, mode):
+        pass
+        if mode == "over" and not self.is_selected:
+            self.SetBackgroundColour(wx.Colour(60, 60, 60))
+            self.Refresh()
+        elif mode == "leave" and not self.is_selected:
+            self.SetBackgroundColour(self.Parent.GetBackgroundColour())
+            self.Refresh()
 
 class AddDialog(wx.Dialog):
     def __init__(self, parent):
@@ -172,7 +242,6 @@ class AddDialog(wx.Dialog):
             'time': f"{self.hr.num}:{self.min.num} {self.mer.num}",
             'freq': self.arrange(self.freq_day),
             'name': self.name.GetValue(),
-            'selected': ""
         }
         if self.IsModal():
             self.EndModal(wx.ID_OK)
@@ -217,7 +286,8 @@ class Alarm(wx.Panel):
         BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         sound_path = os.path.join(BASE_DIR,"sound", "alarm.mp3")
         
-        self.sound = pygame.mixer.Sound(sound_path)
+        if self.okFile(sound_path):
+            self.sound = pygame.mixer.Sound(sound_path)
         self.alarm_played = False
 
         self.Centre()
@@ -233,17 +303,21 @@ class Alarm(wx.Panel):
         for i in self.time_list:
             if i[2] == "Once":
                 if i[0] == now and i[1].toggle.selected and not pygame.mixer.get_busy() and not self.alarm_played:
-                    self.sound.play()
+                    if hasattr(self, "sound"):
+                        self.sound.play()
                     self.alarm_played = True
                 elif not i[1].toggle.selected:
-                    self.sound.stop()
+                    if hasattr(self, "sound"):
+                        self.sound.stop()
             else:
                 for k in i[2]:
                     if i[0] == now and i[1].toggle.selected and k == day and not pygame.mixer.get_busy():
-                        self.sound.play()
+                        if hasattr(self, "sound"):
+                            self.sound.play()
                         self.alarm_played = True
                     elif not i[1].toggle.selected:
-                        self.sound.stop()
+                        if hasattr(self, "sound"):
+                            self.sound.stop()
 
     def OnSizer(self, e):
         self.Layout()
@@ -257,6 +331,14 @@ class Alarm(wx.Panel):
         self.add_btn.Raise()
 
         e.Skip()
+
+    def okFile(self, file):
+        try:
+            self.sound = pygame.mixer.Sound(file)
+        except Exception:
+            return False
+        else: 
+            return True
     
     def add(self, e):
         dlg = AddDialog(self)
@@ -265,6 +347,8 @@ class Alarm(wx.Panel):
         if res == wx.ID_OK:
             freq = ",".join(dlg.data['freq']) if dlg.data['freq'] else "Once"
             time_str = dlg.data['time']
+            if self.okFile(dlg.data['music']):
+                self.sound = pygame.mixer.Sound(dlg.data['music'])
 
             # Create the UI element for the alarm
             new_alarm = AlarmOption(self.scroll_area, time_str, freq)
