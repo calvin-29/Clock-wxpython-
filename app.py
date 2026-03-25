@@ -21,10 +21,10 @@ class ClockApp(wx.Frame):
         # create nav panel sizer and add nav panel options
         self.nav_panel_sizer = wx.BoxSizer(wx.VERTICAL)     
         
-        self.c_btn = wx.StaticText(self.nav_panel, id=-1, label="Clock", style=wx.TE_CENTER)
-        self.t_btn = wx.StaticText(self.nav_panel, id=-1, label="Timer", style=wx.TE_CENTER)
-        self.a_btn = wx.StaticText(self.nav_panel, id=-1, label="Alarm Clock", style=wx.TE_CENTER)
-        self.s_btn = wx.StaticText(self.nav_panel, id=-1, label="Stop Watch", style=wx.TE_CENTER)
+        self.c_btn = wx.StaticText(parent=self.nav_panel, id=-1, label="Clock", style=wx.TE_CENTER)
+        self.t_btn = wx.StaticText(parent=self.nav_panel, id=-1, label="Timer", style=wx.TE_CENTER)
+        self.a_btn = wx.StaticText(parent=self.nav_panel, id=-1, label="Alarm Clock", style=wx.TE_CENTER)
+        self.s_btn = wx.StaticText(parent=self.nav_panel, id=-1, label="Stop Watch", style=wx.TE_CENTER)
 
         # list of options
         self.btn_list = [self.c_btn, self.t_btn, self.a_btn, self.s_btn]
@@ -81,9 +81,6 @@ class ClockApp(wx.Frame):
         # Add all panels to list for easy sorting
         self.windows = [self.clock, self.timer, self.alarm, self.stopwatch]
 
-        # check rezizing windows
-        self.Bind(wx.EVT_SIZE, self.resize)
-
         # set UI
         self.initUI()
 
@@ -101,7 +98,9 @@ class ClockApp(wx.Frame):
                              wx.FONTWEIGHT_EXTRAHEAVY, faceName="Consolas"))
             name = i.GetLabelText().lower()
             i.Bind(wx.EVT_LEFT_DOWN, lambda e: self.switch(e, name))
-
+            i.Bind(wx.EVT_ENTER_WINDOW, self.hover)
+            i.Bind(wx.EVT_LEAVE_WINDOW, self.leave)
+    
         # nav layout set
         self.nav_panel_sizer.Add(self.c_btn, 0, wx.EXPAND | wx.ALL, 5)
         self.nav_panel_sizer.Add(self.t_btn, 0, wx.EXPAND | wx.ALL, 5)
@@ -128,14 +127,14 @@ class ClockApp(wx.Frame):
 
         #center the window
         self.Centre()
-    
-    def resize(self, e):
-        e.Skip()
-    
+
     def switch(self, e=None, name="clock"):
         """To switch between tabs"""
+
+        wid = self.c_btn
         if e:
-            name = e.GetEventObject().GetLabel().lower()
+            wid = e.GetEventObject()
+            name = wid.GetLabel().lower()
         
         for i in self.windows:
             if i.GetName() == name:
@@ -144,6 +143,19 @@ class ClockApp(wx.Frame):
                 i.Hide()
         
         self.Layout()
+    
+    def hover(self, e):
+        wid = e.GetEventObject()
+        self.original = wid.GetSize()
+        wid.SetBackgroundColour(wx.BLUE)
+        wid.SetSize(self.original.width+3, self.original.height+3)
+        wid.Refresh()
+
+    def leave(self, e):
+        wid = e.GetEventObject()
+        wid.SetBackgroundColour(wx.BLACK)
+        wid.SetSize(self.original)
+        wid.Refresh()
 
 if __name__ == "__main__":
     app = wx.App(False)
